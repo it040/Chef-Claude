@@ -55,6 +55,7 @@ app.use(session({
 
 // Initialize Passport for OAuth strategies
 app.use(passport.initialize());
+app.use(passport.session());
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -63,6 +64,10 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+// Development bypass (remove in production)
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/auth', require('./dev-auth-bypass'));
+}
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/users', require('./routes/users'));
 

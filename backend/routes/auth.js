@@ -11,8 +11,9 @@ const router = express.Router();
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
+  passReqToCallback: true
+}, async (req, accessToken, refreshToken, profile, done) => {
   try {
     // Check if user already exists
     let user = await User.findOne({ googleId: profile.id });
@@ -77,25 +78,51 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { 
-    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=auth_failed`,
-    session: true
-  }),
-  (req, res) => {
-    // Generate JWT token
-    const token = generateToken(req.user._id);
-
-    // Set httpOnly cookie for API auth
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+  (req, res, next) => {
+    console.log('🔍 OAuth callback received:', {
+      url: req.url,
+      query: req.query,
+      headers: req.headers
     });
+    
+    passport.authenticate('google', {
+      failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed`,
+      session: true
+    })(req, res, (err) => {
+      if (err) {
+        console.error('❌ OAuth authentication error:', err);
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=oauth_error&details=${encodeURIComponent(err.message)}`);
+      }
+      next();
+    });
+  },
+  (req, res) => {
+    try {
+      if (!req.user) {
+        console.error('❌ No user object after authentication');
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=no_user`);
+      }
 
-    // Redirect to frontend callback (no token in URL needed)
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`;
-    res.redirect(redirectUrl);
+      // Generate JWT token
+      const token = generateToken(req.user._id);
+
+      // Set httpOnly cookie for API auth
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      console.log('✅ OAuth authentication successful for user:', req.user.email);
+      
+      // Redirect to frontend callback
+      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('❌ Error in OAuth callback:', error);
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=callback_error`);
+    }
   }
 );
 

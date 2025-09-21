@@ -133,12 +133,12 @@ recipeSchema.index({ difficulty: 1 });
 
 // Virtual for like count
 recipeSchema.virtual('likeCount').get(function() {
-  return this.likes.length;
+  return this.likes ? this.likes.length : 0;
 });
 
 // Virtual for comment count
 recipeSchema.virtual('commentCount').get(function() {
-  return this.comments.length;
+  return this.comments ? this.comments.length : 0;
 });
 
 // Method to add like
