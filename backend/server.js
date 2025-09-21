@@ -22,12 +22,17 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration
+// CORS configuration - Updated for development
 app.use(cors({
-  origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' 
-    ? 'http://localhost' 
-    : 'http://localhost:5173'),
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:5173', // Vite default
+    'http://localhost:3000', // Create React App default
+    'file://' // Allow file:// protocol for testing
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parsing middleware

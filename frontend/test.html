@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Claude - API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            color: #ff6b35;
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+        .recipe-form {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        textarea, select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        textarea:focus, select:focus, input:focus {
+            outline: none;
+            border-color: #ff6b35;
+        }
+        .btn {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .recipe-result {
+            background: white;
+            border: 2px solid #ff6b35;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        .recipe-title {
+            color: #ff6b35;
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+        .recipe-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            background: #f8f9fa;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .ingredients, .steps {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ff6b35;
+            padding-bottom: 5px;
+        }
+        .ingredients ul, .steps ol {
+            padding-left: 20px;
+        }
+        .ingredients li, .steps li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Chef Claude</h1>
+            <p class="subtitle">AI-Powered Recipe Generator</p>
+        </div>
+
+        <div class="recipe-form">
+            <h2 style="margin-bottom: 20px; color: #333;">Generate Your Recipe</h2>
+            
+            <div class="form-group">
+                <label for="ingredients">What ingredients do you have?</label>
+                <textarea 
+                    id="ingredients" 
+                    rows="3" 
+                    placeholder="e.g., chicken breast, rice, broccoli, garlic, soy sauce..."
+                ></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="cuisine">Cuisine Type</label>
+                    <select id="cuisine">
+                        <option value="">Any</option>
+                        <option value="italian">Italian</option>
+                        <option value="mexican">Mexican</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="indian">Indian</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="thai">Thai</option>
+                        <option value="french">French</option>
+                        <option value="mediterranean">Mediterranean</option>
+                        <option value="american">American</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="difficulty">Difficulty</label>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="maxTime">Maximum Cooking Time (minutes)</label>
+                <input type="number" id="maxTime" value="45" min="10" max="180">
+            </div>
+
+            <button class="btn" onclick="generateRecipe()">
+                🚀 Generate Recipe with AI
+            </button>
+        </div>
+
+        <div id="status"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function generateRecipe() {
+            const ingredients = document.getElementById('ingredients').value.trim();
+            if (!ingredients) {
+                showStatus('❌ Please enter some ingredients!', 'error');
+                return;
+            }
+
+            const cuisine = document.getElementById('cuisine').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const maxTime = parseInt(document.getElementById('maxTime').value);
+
+            // Parse ingredients
+            const ingredientList = ingredients.split(',').map(ing => ing.trim()).filter(ing => ing);
+
+            const requestData = {
+                ingredients: ingredientList,
+                preferences: {},
+                dietary: [],
+                allergies: [],
+                cuisine: cuisine,
+                difficulty: difficulty,
+                maxTime: maxTime
+            };
+
+            showStatus('🔄 Generating your recipe with AI... This may take 10-15 seconds.', 'loading');
+
+            try {
+                // Test user registration/login first
+                const testUser = {
+                    name: 'Test Chef',
+                    email: 'test@chefclaude.com',
+                    password: 'testpass123'
+                };
+
+                let authToken = null;
+                try {
+                    const registerResponse = await fetch(`${API_BASE}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(testUser)
+                    });
+                    const registerData = await registerResponse.json();
+                    authToken = registerData.token;
+                } catch (regError) {
+                    // Try login if registration fails
+                    try {
+                        const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: testUser.email,
+                                password: testUser.password
+                            })
+                        });
+                        const loginData = await loginResponse.json();
+                        authToken = loginData.token;
+                    } catch (loginError) {
+                        console.log('Auth failed, trying without auth...');
+                    }
+                }
+
+                // Generate recipe
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
+                const response = await fetch(`${API_BASE}/recipes/generate`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success && data.recipe) {
+                    showStatus('✅ Recipe generated successfully!', 'success');
+                    displayRecipe(data.recipe);
+                } else {
+                    throw new Error('Invalid response format');
+                }
+
+            } catch (error) {
+                console.error('Recipe generation error:', error);
+                showStatus(`❌ Failed to generate recipe: ${error.message}`, 'error');
+            }
+        }
+
+        function displayRecipe(recipe) {
+            const resultDiv = document.getElementById('result');
+            
+            const ingredientsList = recipe.ingredients.map(ing => 
+                `<li>${ing.quantity} ${ing.unit} ${ing.name}</li>`
+            ).join('');
+
+            const stepsList = recipe.steps.map((step, index) => 
+                `<li>Step ${index + 1}: ${step}</li>`
+            ).join('');
+
+            resultDiv.innerHTML = `
+                <div class="recipe-result">
+                    <h2 class="recipe-title">${recipe.title}</h2>
+                    ${recipe.description ? `<p style="color: #666; margin-bottom: 20px;">${recipe.description}</p>` : ''}
+                    
+                    <div class="recipe-meta">
+                        <div class="meta-item">⏱️ ${recipe.totalTime} min</div>
+                        <div class="meta-item">👥 ${recipe.servings} servings</div>
+                        <div class="meta-item">📊 ${recipe.difficulty}</div>
+                        ${recipe.cuisine ? `<div class="meta-item">🌍 ${recipe.cuisine}</div>` : ''}
+                    </div>
+
+                    <div class="ingredients">
+                        <h3 class="section-title">🛒 Ingredients</h3>
+                        <ul>${ingredientsList}</ul>
+                    </div>
+
+                    <div class="steps">
+                        <h3 class="section-title">👨‍🍳 Instructions</h3>
+                        <ol>${stepsList}</ol>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Test server connection on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                showStatus(`✅ Connected to Chef Claude API - Server Status: ${data.status}`, 'success');
+            } catch (error) {
+                showStatus('❌ Cannot connect to Chef Claude API. Make sure the backend server is running on port 5000.', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

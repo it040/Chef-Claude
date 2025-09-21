@@ -91,11 +91,13 @@ Please create a delicious recipe that uses the available ingredients and respect
         throw new Error('Invalid JSON response from AI');
       }
       
-      // Validate required fields
-      this.validateRecipeData(recipeData);
+      // Clean and format the data first
+      const formattedData = this.formatRecipeData(recipeData);
       
-      // Clean and format the data
-      return this.formatRecipeData(recipeData);
+      // Then validate the formatted data
+      this.validateRecipeData(formattedData);
+      
+      return formattedData;
       
     } catch (error) {
       console.error('Gemini API Error:', error);
@@ -171,17 +173,43 @@ Please create a delicious recipe that uses the available ingredients and respect
   }
 
   formatRecipeData(data) {
+    // Handle different field name variations from Gemini API
+    const title = data.title || data.recipeName || 'Generated Recipe';
+    const steps = data.steps || data.instructions || [];
+    
+    // Clean and format ingredients (handle different field name variations)
+    const cleanIngredients = (data.ingredients || []).map(ingredient => ({
+      name: ingredient.name || ingredient.item || '',
+      quantity: ingredient.quantity || ingredient.amount || '1',
+      unit: ingredient.unit || 'piece'
+    }));
+
+    // Convert numeric fields from strings if needed
+    const parseNumber = (value, defaultValue) => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10);
+        return isNaN(parsed) ? defaultValue : parsed;
+      }
+      return defaultValue;
+    };
+
+    const servings = parseNumber(data.servings, 4);
+    const prepTime = parseNumber(data.prepTime, 15);
+    const cookTime = parseNumber(data.cookTime, 30);
+    const totalTime = parseNumber(data.totalTime, prepTime + cookTime);
+
     // Ensure all required fields are present with defaults
     return {
-      title: data.title?.trim() || 'Generated Recipe',
+      title: title.trim(),
       description: data.description?.trim() || '',
-      ingredients: data.ingredients || [],
-      steps: data.steps || [],
-      servings: data.servings || 4,
-      prepTime: data.prepTime || 15,
-      cookTime: data.cookTime || 30,
-      totalTime: data.totalTime || (data.prepTime + data.cookTime),
-      difficulty: data.difficulty || 'medium',
+      ingredients: cleanIngredients,
+      steps: steps,
+      servings: servings,
+      prepTime: prepTime,
+      cookTime: cookTime,
+      totalTime: totalTime,
+      difficulty: (data.difficulty || 'medium').toLowerCase(),
       cuisine: data.cuisine?.trim() || '',
       tags: Array.isArray(data.tags) ? data.tags : [],
       nutrition: data.nutrition || null,

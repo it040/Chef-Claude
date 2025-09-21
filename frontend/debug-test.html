@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Claude - Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #ff6b35;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #e55a2b;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Chef Claude - Debug Test</h1>
+        
+        <div class="test-section">
+            <h3>1. Server Connection Test</h3>
+            <button onclick="testHealth()">Test API Health</button>
+            <div id="health-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Simple Recipe Generation Test</h3>
+            <input type="text" id="test-ingredients" placeholder="Enter ingredients (comma separated)" value="chicken, rice, broccoli">
+            <input type="text" id="test-cuisine" placeholder="Cuisine type" value="Asian">
+            <br>
+            <button onclick="testSimpleRecipe()">Generate Test Recipe</button>
+            <div id="recipe-status"></div>
+            <div id="recipe-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Debug Information</h3>
+            <button onclick="showDebugInfo()">Show Browser Debug Info</button>
+            <div id="debug-info"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function testHealth() {
+            showStatus('health-status', '🔄 Testing server connection...', 'info');
+            
+            try {
+                console.log('Testing health endpoint:', API_BASE + '/health');
+                
+                const response = await fetch(API_BASE + '/health');
+                console.log('Health response:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Health data:', data);
+                
+                showStatus('health-status', 
+                    `✅ Server Connected Successfully!<br>` +
+                    `Status: ${data.status}<br>` + 
+                    `Message: ${data.message}<br>` +
+                    `Time: ${data.timestamp}`, 
+                    'success'
+                );
+                
+            } catch (error) {
+                console.error('Health test error:', error);
+                showStatus('health-status', 
+                    `❌ Connection Failed: ${error.message}<br>` +
+                    `Make sure the backend server is running on port 5000.<br>` +
+                    `Try running: <code>node simple-server-test.js</code>`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testSimpleRecipe() {
+            const ingredients = document.getElementById('test-ingredients').value.trim();
+            const cuisine = document.getElementById('test-cuisine').value.trim();
+            
+            if (!ingredients) {
+                showStatus('recipe-status', '❌ Please enter some ingredients!', 'error');
+                return;
+            }
+
+            showStatus('recipe-status', '🔄 Testing recipe generation...', 'info');
+            
+            try {
+                const requestData = {
+                    ingredients: ingredients.split(',').map(ing => ing.trim()),
+                    cuisine: cuisine,
+                    difficulty: 'medium',
+                    maxTime: 45
+                };
+                
+                console.log('Recipe request data:', requestData);
+                
+                const response = await fetch(API_BASE + '/test-recipe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('Recipe response:', response);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Recipe data:', data);
+                
+                if (data.success) {
+                    showStatus('recipe-status', '✅ Test Recipe Generated Successfully!', 'success');
+                    displayTestRecipe(data.recipe);
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+                
+            } catch (error) {
+                console.error('Recipe test error:', error);
+                showStatus('recipe-status', `❌ Recipe Generation Failed: ${error.message}`, 'error');
+            }
+        }
+
+        function displayTestRecipe(recipe) {
+            const resultDiv = document.getElementById('recipe-result');
+            resultDiv.innerHTML = `
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                    <h4 style="color: #ff6b35;">${recipe.title}</h4>
+                    <p><strong>Description:</strong> ${recipe.description}</p>
+                    <p><strong>Cooking Time:</strong> ${recipe.totalTime} minutes</p>
+                    <p><strong>Servings:</strong> ${recipe.servings}</p>
+                    <p><strong>Difficulty:</strong> ${recipe.difficulty}</p>
+                    <p><strong>Cuisine:</strong> ${recipe.cuisine}</p>
+                    
+                    <h5>Ingredients:</h5>
+                    <ul>
+                        ${recipe.ingredients.map(ing => `<li>${ing.quantity} ${ing.unit} ${ing.name}</li>`).join('')}
+                    </ul>
+                    
+                    <h5>Steps:</h5>
+                    <ol>
+                        ${recipe.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                </div>
+            `;
+        }
+
+        function showDebugInfo() {
+            const debugDiv = document.getElementById('debug-info');
+            debugDiv.innerHTML = `
+                <pre>
+🔍 DEBUG INFORMATION:
+
+Browser: ${navigator.userAgent}
+API Base URL: ${API_BASE}
+Current Time: ${new Date().toISOString()}
+Page URL: ${window.location.href}
+
+Fetch API Support: ${typeof fetch !== 'undefined' ? '✅ Yes' : '❌ No'}
+Console Errors: Check the browser console (F12) for detailed error messages
+
+🔧 TROUBLESHOOTING STEPS:
+1. Make sure backend server is running: node simple-server-test.js
+2. Check browser console (F12) for detailed errors
+3. Try accessing ${API_BASE}/health directly in a new browser tab
+4. Verify no firewall/antivirus is blocking port 5000
+                </pre>
+            `;
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            showStatus('health-status', '🔄 Auto-testing server connection on page load...', 'info');
+            setTimeout(testHealth, 500);
+        };
+    </script>
+</body>
+</html>
