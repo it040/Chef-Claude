@@ -17,6 +17,8 @@ import {
   ListItemText,
   Paper,
   Avatar,
+  Skeleton,
+  Snackbar,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -40,6 +42,7 @@ const RecipeDetail = () => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Fetch recipe details
   const { 
@@ -60,7 +63,9 @@ const RecipeDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recipe', id] });
       queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
+      setSnackbar({ open: true, message: 'Recipe saved', severity: 'success' });
     },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to save recipe', severity: 'error' }),
   });
 
   // Like recipe mutation
@@ -69,6 +74,7 @@ const RecipeDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recipe', id] });
     },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to update like', severity: 'error' }),
   });
 
   const handleSaveRecipe = () => {
@@ -101,7 +107,7 @@ const RecipeDetail = () => {
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      // You could show a toast notification here
+      setSnackbar({ open: true, message: 'Link copied to clipboard', severity: 'success' });
     }
   };
 
@@ -124,9 +130,42 @@ const RecipeDetail = () => {
   if (loadingRecipe) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress size={60} />
+        <Box sx={{ mb: 3 }}>
+          <Skeleton variant="text" width="30%" height={44} />
         </Box>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="rectangular" height={400} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="text" height={56} width="80%" />
+            <Skeleton variant="text" height={24} width="60%" />
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+              <Skeleton variant="rounded" height={32} width={100} />
+              <Skeleton variant="rounded" height={32} width={120} />
+              <Skeleton variant="rounded" height={32} width={90} />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+              <Skeleton variant="rounded" height={36} width={140} />
+              <Skeleton variant="circular" width={36} height={36} />
+              <Skeleton variant="circular" width={36} height={36} />
+            </Box>
+          </Grid>
+        </Grid>
+        <Grid container spacing={4} sx={{ mt: 1 }}>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="text" height={32} width={160} />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} variant="text" height={24} width={`${80 - i * 5}%`} />
+            ))}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="text" height={32} width={160} />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} variant="text" height={24} width={`${90 - i * 7}%`} />
+            ))}
+          </Grid>
+        </Grid>
       </Container>
     );
   }
@@ -401,6 +440,17 @@ const RecipeDetail = () => {
           </Box>
         </Paper>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

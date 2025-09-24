@@ -178,10 +178,37 @@ Please create a delicious recipe that uses the available ingredients and respect
     const steps = data.steps || data.instructions || [];
     
     // Clean and format ingredients (handle different field name variations)
+    const UNIT_MAP = {
+      tablespoon: 'tbsp', tablespoons: 'tbsp', tbsp: 'tbsp',
+      teaspoon: 'tsp', teaspoons: 'tsp', tsp: 'tsp',
+      cup: 'cup', cups: 'cup',
+      ounce: 'oz', ounces: 'oz', oz: 'oz',
+      pound: 'lb', pounds: 'lb', lb: 'lb',
+      gram: 'g', grams: 'g', g: 'g',
+      kilogram: 'kg', kilograms: 'kg', kg: 'kg',
+      milliliter: 'ml', milliliters: 'ml', ml: 'ml',
+      liter: 'l', liters: 'l', l: 'l',
+      piece: 'piece', pieces: 'piece',
+      clove: 'clove', cloves: 'clove',
+      slice: 'slice', slices: 'slice',
+      pinch: 'pinch', pinches: 'pinch',
+      dash: 'dash', dashes: 'dash',
+      handful: 'handful', handfuls: 'handful',
+      bunch: 'bunch', bunches: 'bunch',
+      can: 'can', cans: 'can',
+      package: 'package', packages: 'package'
+    };
+
+    const normalizeUnit = (u) => {
+      if (!u) return 'other';
+      const unit = String(u).toLowerCase().trim();
+      return UNIT_MAP[unit] || 'other';
+    };
+
     const cleanIngredients = (data.ingredients || []).map(ingredient => ({
       name: ingredient.name || ingredient.item || '',
       quantity: ingredient.quantity || ingredient.amount || '1',
-      unit: ingredient.unit || 'piece'
+      unit: normalizeUnit(ingredient.unit || ingredient.units)
     }));
 
     // Convert numeric fields from strings if needed

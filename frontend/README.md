@@ -32,11 +32,8 @@ cp env.example .env
 Configure your environment variables:
 
 ```env
-# API Configuration
-REACT_APP_API_URL=http://localhost:5000
-
-# Development
-REACT_APP_NODE_ENV=development
+# API Configuration (Vite)
+VITE_API_URL=http://localhost:5000
 ```
 
 ### 3. Start Development Server
@@ -45,7 +42,7 @@ REACT_APP_NODE_ENV=development
 npm run dev
 ```
 
-The application will start on `http://localhost:3000`
+The application will start on `http://localhost:5173`
 
 ## Available Scripts
 

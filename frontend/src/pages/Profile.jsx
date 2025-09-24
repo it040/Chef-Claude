@@ -36,9 +36,11 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { userAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, updatePreferences } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [preferences, setPreferences] = useState(user?.preferences || {});
   const [openDialog, setOpenDialog] = useState(false);
@@ -344,7 +346,7 @@ const Profile = () => {
                       cursor: 'pointer',
                       '&:hover': { bgcolor: 'action.hover' }
                     }}
-                    onClick={() => window.location.href = `/recipe/${recipe._id}`}
+                    onClick={() => navigate(`/recipe/${recipe._id}`)}
                   >
                     <CardContent sx={{ py: 2 }}>
                       <Typography variant="h6" noWrap gutterBottom>
@@ -370,7 +372,7 @@ const Profile = () => {
                 ))}
                 <Button 
                   variant="outlined" 
-                  onClick={() => window.location.href = '/saved'}
+                  onClick={() => navigate('/saved')}
                   sx={{ mt: 2, textTransform: 'none' }}
                 >
                   View All Saved Recipes
@@ -383,7 +385,7 @@ const Profile = () => {
                 </Typography>
                 <Button 
                   variant="contained" 
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => navigate('/')}
                   sx={{ textTransform: 'none' }}
                 >
                   Generate Your First Recipe

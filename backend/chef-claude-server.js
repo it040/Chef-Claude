@@ -40,22 +40,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Session (for auth persistence)
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'chef-claude-session-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  },
-}));
+// Sessions disabled: using stateless JWT auth for frontend API and OAuth callback
 
-// Initialize Passport for OAuth strategies
+// Initialize Passport for OAuth strategies (stateless)
 app.use(passport.initialize());
-app.use(passport.session());
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)

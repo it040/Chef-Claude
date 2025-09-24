@@ -4,67 +4,57 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
+import { PromptProvider } from './context/PromptContext';
 import Navbar from './components/Navbar';
+import PromptSidebar from './components/PromptSidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
 import SavedRecipes from './pages/SavedRecipes';
 import RecipeDetail from './pages/RecipeDetail';
+import Recent from './pages/Recent';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
+import Box from '@mui/material/Box';
 
-// Create Material-UI theme
-const theme = createTheme({
+// Dynamic Material-UI theme (supports light/dark)
+const getTheme = (mode) => createTheme({
   palette: {
-    mode: 'light',
+    mode,
     primary: {
-      main: '#ff6b35', // Chef orange
+      main: '#ff6b35',
       light: '#ff8a65',
       dark: '#e64a19',
     },
     secondary: {
-      main: '#2e7d32', // Green for healthy recipes
+      main: '#2e7d32',
       light: '#4caf50',
       dark: '#1b5e20',
     },
-    background: {
-      default: '#fafafa',
-      paper: '#ffffff',
-    },
+    background: mode === 'dark'
+      ? { default: '#0f1115', paper: '#161a22' }
+      : { default: '#fafafa', paper: '#ffffff' },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontWeight: 700,
-    },
-    h2: {
-      fontWeight: 600,
-    },
-    h3: {
-      fontWeight: 500,
-    },
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h1: { fontWeight: 800 },
+    h2: { fontWeight: 700 },
+    h3: { fontWeight: 600 },
   },
-  shape: {
-    borderRadius: 12,
-  },
+  shape: { borderRadius: 12 },
   components: {
     MuiButton: {
       styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 8,
-          fontWeight: 500,
-        },
+        root: { textTransform: 'none', borderRadius: 8, fontWeight: 600 },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          '&:hover': {
-            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-          },
+          boxShadow: mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)',
+          '&:hover': { boxShadow: mode === 'dark' ? '0 6px 20px rgba(0,0,0,0.6)' : '0 6px 20px rgba(0,0,0,0.15)' },
         },
       },
     },
@@ -85,47 +75,77 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppShell({ mode, onToggleTheme }) {
+  const [promptOpen, setPromptOpen] = React.useState(false);
+  const drawerWidth = 280;
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <div className="App" style={{ display: 'flex' }}>
+      {isAuthenticated && (
+        <PromptSidebar open={promptOpen} onClose={() => setPromptOpen(false)} />
+      )}
+      <Box component="div" sx={{ flexGrow: 1, width: '100%' }}>
+        <Navbar mode={mode} onToggleTheme={onToggleTheme} onOpenPrompts={() => setPromptOpen(true)} />
+        <Box component="main" sx={{ mt: '64px', px: 0, ml: { md: isAuthenticated ? `${drawerWidth}px` : 0 } }}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/recipe/:id" element={<RecipeDetail />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/saved" 
+              element={
+                <ProtectedRoute>
+                  <SavedRecipes />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Public recent page */}
+            <Route path="/recent" element={<Recent />} />
+            
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Box>
+      </Box>
+    </div>
+  );
+}
+
 function App() {
+  const [mode, setMode] = React.useState(() => localStorage.getItem('chef_theme_mode') || 'light');
+  const theme = React.useMemo(() => getTheme(mode), [mode]);
+  const toggleTheme = () => {
+    setMode((m) => {
+      const next = m === 'light' ? 'dark' : 'light';
+      try { localStorage.setItem('chef_theme_mode', next); } catch {}
+      return next;
+    });
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          <Router>
-            <div className="App">
-              <Navbar />
-              <main style={{ marginTop: '64px' }}>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/recipe/:id" element={<RecipeDetail />} />
-                  
-                  {/* Protected routes */}
-                  <Route 
-                    path="/profile" 
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/saved" 
-                    element={
-                      <ProtectedRoute>
-                        <SavedRecipes />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Catch all route */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-            </div>
-          </Router>
+          <PromptProvider>
+            <Router>
+              <AppShell mode={mode} onToggleTheme={toggleTheme} />
+            </Router>
+          </PromptProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

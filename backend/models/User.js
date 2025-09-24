@@ -77,8 +77,7 @@ const userSchema = new mongoose.Schema({
 
 // Virtual for user's recipe count
 userSchema.virtual('recipeCount').get(function() {
-  const list = Array.isArray(this.savedRecipes) ? this.savedRecipes : [];
-  return list.length;
+  return Array.isArray(this.savedRecipes) ? this.savedRecipes.length : 0;
 });
 
 // Method to add recipe to favorites

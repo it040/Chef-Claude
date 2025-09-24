@@ -18,6 +18,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Skeleton,
+  Snackbar,
 } from '@mui/material';
 import {
   Search,
@@ -31,9 +33,12 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, recipeAPI } from '../services/api';
+import { Alert as MuiAlert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const SavedRecipes = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
@@ -57,13 +62,18 @@ const SavedRecipes = () => {
     enabled: !!user,
   });
 
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
   // Unsaved recipe mutation
   const unsaveRecipeMutation = useMutation({
     mutationFn: (id) => recipeAPI.unsaveRecipe(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
       queryClient.invalidateQueries({ queryKey: ['user', 'stats'] });
+      setSnackbar({ open: true, message: 'Removed from saved', severity: 'success' });
     },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to remove', severity: 'error' }),
   });
 
   // Like recipe mutation
@@ -72,6 +82,7 @@ const SavedRecipes = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
     },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to update like', severity: 'error' }),
   });
 
   const handleUnsaveRecipe = (recipeId) => {
@@ -209,9 +220,23 @@ const SavedRecipes = () => {
 
       {/* Recipe Grid */}
       {loadingSaved ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress size={60} />
-        </Box>
+        <Grid container spacing={3}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={4} key={i}>
+              <Card>
+                <Skeleton variant="rectangular" height={200} />
+                <CardContent>
+                  <Skeleton variant="text" height={28} width="80%" />
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                    <Skeleton variant="rounded" height={28} width={100} />
+                    <Skeleton variant="rounded" height={28} width={80} />
+                    <Skeleton variant="rounded" height={28} width={90} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       ) : savedRecipes?.recipes?.length > 0 ? (
         <>
           <Grid container spacing={3}>
@@ -233,7 +258,7 @@ const SavedRecipes = () => {
                       image={recipe.imageUrl}
                       alt={recipe.title}
                       sx={{ cursor: 'pointer' }}
-                      onClick={() => window.location.href = `/recipe/${recipe._id}`}
+                      onClick={() => navigate(`/recipe/${recipe._id}`)}
                     />
                   )}
                   
@@ -246,7 +271,7 @@ const SavedRecipes = () => {
                         cursor: 'pointer',
                         '&:hover': { color: 'primary.main' }
                       }}
-                      onClick={() => window.location.href = `/recipe/${recipe._id}`}
+                      onClick={() => navigate(`/recipe/${recipe._id}`)}
                     >
                       {recipe.title}
                     </Typography>
@@ -357,13 +382,24 @@ const SavedRecipes = () => {
           </Typography>
           <Button 
             variant="contained" 
-            onClick={() => window.location.href = '/'}
+            onClick={() => navigate('/')}
             sx={{ textTransform: 'none' }}
           >
             Generate Your First Recipe
           </Button>
         </Box>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

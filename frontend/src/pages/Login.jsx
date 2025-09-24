@@ -7,15 +7,19 @@ import {
   Button,
   Alert,
   CircularProgress,
+  Divider,
 } from '@mui/material';
 import { Restaurant, Google } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTheme, alpha } from '@mui/material/styles';
 
 const Login = () => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   
   const from = location.state?.from?.pathname || '/';
 
@@ -54,10 +58,12 @@ const Login = () => {
       <Paper 
         elevation={3} 
         sx={{ 
-          p: 6, 
+          p: { xs: 4, md: 6 }, 
           textAlign: 'center',
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)',
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         {/* Logo */}
@@ -74,11 +80,11 @@ const Login = () => {
             component="h1" 
             gutterBottom
             sx={{ 
-              fontWeight: 700,
-              background: 'linear-gradient(45deg, #ff6b35, #f7931e)',
+              fontWeight: 800,
+              background: (th) => `linear-gradient(45deg, ${th.palette.primary.main}, ${th.palette.secondary.main})`,
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: 'transparent',
             }}
           >
             Chef Claude
@@ -90,68 +96,72 @@ const Login = () => {
           variant="h5" 
           gutterBottom 
           sx={{ 
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'text.primary',
-            mb: 2
+            mb: 1.5
           }}
         >
-          Welcome Back!
+          Welcome back!
         </Typography>
         
         <Typography 
           variant="body1" 
           color="text.secondary" 
-          sx={{ mb: 4, lineHeight: 1.6 }}
+          sx={{ mb: 3, lineHeight: 1.6 }}
         >
-          Sign in to save your favorite recipes, create your own collections, 
-          and personalize your culinary experience with Chef Claude.
+          Sign in to save favorite recipes, build collections, and get personalized suggestions.
         </Typography>
 
+        {/* Professional Google Sign-In */}
+        <Button
+          component="a"
+          href={googleAuthUrl}
+          onClick={handleGoogleClick}
+          variant="outlined"
+          size="large"
+          startIcon={<Google sx={{ color: '#4285F4' }} />}
+          sx={{
+            bgcolor: '#fff',
+            color: '#3c4043',
+            borderColor: '#dadce0',
+            px: 3.5,
+            py: 1.5,
+            fontSize: '1rem',
+            fontWeight: 600,
+            borderRadius: 28,
+            textTransform: 'none',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            '&:hover': {
+              bgcolor: '#fff',
+              borderColor: '#dadce0',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+            },
+            ...(isDark && { boxShadow: '0 1px 2px rgba(0,0,0,0.6)' }),
+          }}
+        >
+          Continue with Google
+        </Button>
+
+        <Divider sx={{ my: 3 }} />
+
         {/* Benefits */}
-        <Box sx={{ mb: 4, textAlign: 'left' }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+        <Box sx={{ mb: 3, textAlign: 'left' }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 1.5 }}>
             What you'll get:
           </Typography>
-          <Box component="ul" sx={{ pl: 2, color: 'text.secondary' }}>
+          <Box component="ul" sx={{ pl: 2, color: 'text.secondary', m: 0 }}>
             <li>Save and organize your favorite recipes</li>
-            <li>Personalized recipe recommendations</li>
+            <li>Personalized recommendations tailored to your tastes</li>
             <li>Dietary preferences and allergy tracking</li>
             <li>Recipe collections and meal planning</li>
             <li>Community features and recipe sharing</li>
           </Box>
         </Box>
 
-        {/* Google Sign In Button */}
-        <Button
-          component="a"
-          href={googleAuthUrl}
-          onClick={handleGoogleClick}
-          variant="contained"
-          size="large"
-          startIcon={<Google />}
-          sx={{
-            bgcolor: '#4285f4',
-            color: 'white',
-            px: 4,
-            py: 2,
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            borderRadius: 2,
-            textTransform: 'none',
-            mb: 3,
-            '&:hover': {
-              bgcolor: '#357ae8',
-            },
-          }}
-        >
-          Continue with Google
-        </Button>
-
         {/* Privacy Note */}
-        <Alert severity="info" sx={{ mt: 3 }}>
-          <Typography variant="body2">
-            We respect your privacy. We only access your basic profile information 
-            (name and email) to provide you with the best cooking experience.
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            We respect your privacy. We only access your basic profile information (name and email) to improve your experience.
           </Typography>
         </Alert>
 

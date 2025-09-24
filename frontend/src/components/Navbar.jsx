@@ -17,11 +17,13 @@ import {
   Favorite,
   ExitToApp,
   Settings,
+  DarkMode,
+  LightMode,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const Navbar = () => {
+const Navbar = ({ onOpenPrompts, onToggleTheme, mode }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,7 +66,7 @@ const Navbar = () => {
       position="fixed" 
       elevation={1}
       sx={{ 
-        backgroundColor: 'white',
+        backgroundColor: 'background.paper',
         color: 'text.primary',
         borderBottom: '1px solid',
         borderBottomColor: 'divider',
@@ -104,19 +106,38 @@ const Navbar = () => {
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Navigation Links */}
-        {isAuthenticated && (
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-            <Button
-              color="inherit"
-              onClick={() => navigate('/')}
-              sx={{ 
-                mr: 2,
-                color: isActive('/') ? 'primary.main' : 'text.primary',
-                fontWeight: isActive('/') ? 600 : 400,
-              }}
-            >
-              Home
-            </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+          <IconButton aria-label="toggle theme" onClick={onToggleTheme} sx={{ mr: 1 }}>
+            {mode === 'dark' ? <LightMode /> : <DarkMode />}
+          </IconButton>
+          {isAuthenticated && (
+            <IconButton aria-label="open prompts" onClick={onOpenPrompts} sx={{ mr: 1 }}>
+              <Settings />
+            </IconButton>
+          )}
+          <Button
+            color="inherit"
+            onClick={() => navigate('/')}
+            sx={{ 
+              mr: 2,
+              color: isActive('/') ? 'primary.main' : 'text.primary',
+              fontWeight: isActive('/') ? 600 : 400,
+            }}
+          >
+            Home
+          </Button>
+          <Button
+            color="inherit"
+            onClick={() => navigate('/recent')}
+            sx={{ 
+              mr: 2,
+              color: isActive('/recent') ? 'primary.main' : 'text.primary',
+              fontWeight: isActive('/recent') ? 600 : 400,
+            }}
+          >
+            Recent
+          </Button>
+          {isAuthenticated && (
             <Button
               color="inherit"
               onClick={() => navigate('/saved')}
@@ -128,8 +149,8 @@ const Navbar = () => {
             >
               Saved Recipes
             </Button>
-          </Box>
-        )}
+          )}
+        </Box>
 
         {/* User Menu */}
         {isAuthenticated ? (

@@ -71,35 +71,28 @@ passport.deserializeUser(async (id, done) => {
 
 // Google OAuth routes
 router.get('/google', 
+  // Use stateless OAuth (no server session). We issue a JWT cookie after callback.
   passport.authenticate('google', { 
     scope: ['profile', 'email'],
-    session: true
+    session: false
   })
 );
 
 router.get('/google/callback',
+  // Short-circuit: if Google did not send `code`, go back to login to avoid loops
   (req, res, next) => {
-    console.log('🔍 OAuth callback received:', {
-      url: req.url,
-      query: req.query,
-      headers: req.headers
-    });
-    
-    passport.authenticate('google', {
-      failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed`,
-      session: true
-    })(req, res, (err) => {
-      if (err) {
-        console.error('❌ OAuth authentication error:', err);
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=oauth_error&details=${encodeURIComponent(err.message)}`);
-      }
-      next();
-    });
+    if (!req.query || !req.query.code) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=no_code`);
+    }
+    next();
   },
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed`,
+    session: false
+  }),
   (req, res) => {
     try {
       if (!req.user) {
-        console.error('❌ No user object after authentication');
         return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=no_user`);
       }
 
@@ -114,13 +107,10 @@ router.get('/google/callback',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      console.log('✅ OAuth authentication successful for user:', req.user.email);
-      
       // Redirect to frontend callback
       const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
       res.redirect(redirectUrl);
     } catch (error) {
-      console.error('❌ Error in OAuth callback:', error);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=callback_error`);
     }
   }
@@ -195,12 +185,33 @@ router.put('/preferences', authenticateToken, async (req, res) => {
   }
 });
 
-// Logout (client-side token removal)
-router.post('/logout', authenticateToken, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  });
+// Logout: clear auth cookie and destroy session
+router.post('/logout', (req, res) => {
+  try {
+    // Clear JWT cookie used by frontend API calls
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      path: '/',
+    });
+
+    // Passport session cleanup (for Google OAuth)
+    if (typeof req.logout === 'function') {
+      try { req.logout(() => {}); } catch (_) {}
+    }
+    if (req.session) {
+      req.session.destroy(() => {});
+    }
+
+    // Prevent caches from serving an authenticated response after logout
+    res.set('Cache-Control', 'no-store');
+
+    return res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to logout' });
+  }
 });
 
 // Delete account
