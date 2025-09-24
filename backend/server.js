@@ -59,6 +59,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api', require('./routes/misc'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -42,8 +42,10 @@ const SavedRecipes = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('');
+  const [cuisineFilter, setCuisineFilter] = useState('');
   const [page, setPage] = useState(1);
 
   // Fetch saved recipes
@@ -52,13 +54,15 @@ const SavedRecipes = () => {
     isLoading: loadingSaved,
     error: savedError 
   } = useQuery({
-    queryKey: ['user', 'saved', { page, search: searchTerm, difficulty: difficultyFilter, time: timeFilter }],
+    queryKey: ['user', 'saved', { page, search: searchTerm, author: authorFilter, difficulty: difficultyFilter, time: timeFilter, cuisine: cuisineFilter }],
     queryFn: () => userAPI.getSavedRecipes({ 
       page, 
       limit: 12,
       search: searchTerm || undefined,
+      author: authorFilter || undefined,
       difficulty: difficultyFilter || undefined,
       maxTime: timeFilter || undefined,
+      cuisine: cuisineFilter || undefined,
     }),
     enabled: !!user,
   });
@@ -120,14 +124,18 @@ const SavedRecipes = () => {
       setDifficultyFilter(value);
     } else if (filterType === 'time') {
       setTimeFilter(value);
+    } else if (filterType === 'cuisine') {
+      setCuisineFilter(value);
     }
     setPage(1);
   };
 
   const clearFilters = () => {
     setSearchTerm('');
+    setAuthorFilter('');
     setDifficultyFilter('');
     setTimeFilter('');
+    setCuisineFilter('');
     setPage(1);
   };
 
@@ -154,69 +162,87 @@ const SavedRecipes = () => {
       </Box>
 
       {/* Search and Filters */}
-      <Paper elevation={1} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              placeholder="Search recipes..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Difficulty</InputLabel>
-              <Select
-                value={difficultyFilter}
-                onChange={(e) => handleFilterChange('difficulty', e.target.value)}
-                label="Difficulty"
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="easy">Easy</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="hard">Hard</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Max Time</InputLabel>
-              <Select
-                value={timeFilter}
-                onChange={(e) => handleFilterChange('time', e.target.value)}
-                label="Max Time"
-              >
-                <MenuItem value="">Any</MenuItem>
-                <MenuItem value="30">30 minutes</MenuItem>
-                <MenuItem value="60">1 hour</MenuItem>
-                <MenuItem value="120">2 hours</MenuItem>
-                <MenuItem value="300">5+ hours</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <Button
-              variant="outlined"
-              onClick={clearFilters}
-              startIcon={<FilterList />}
-              fullWidth
-              sx={{ textTransform: 'none' }}
+      <Paper elevation={1} sx={{ p: 2.5, mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+          <TextField
+            size="small"
+            label="Search"
+            placeholder="Search recipes..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flex: '1 1 320px', minWidth: 240 }}
+          />
+
+          <TextField
+            size="small"
+            placeholder="Author name"
+            label="Author"
+            value={authorFilter}
+            onChange={(e) => { setAuthorFilter(e.target.value); setPage(1); }}
+            sx={{ flex: '1 1 240px', minWidth: 220 }}
+          />
+
+          <FormControl size="small" sx={{ flex: '0 1 180px', minWidth: 160 }}>
+            <InputLabel>Difficulty</InputLabel>
+            <Select
+              value={difficultyFilter}
+              onChange={(e) => handleFilterChange('difficulty', e.target.value)}
+              label="Difficulty"
             >
-              Clear
-            </Button>
-          </Grid>
-        </Grid>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="easy">Easy</MenuItem>
+              <MenuItem value="medium">Medium</MenuItem>
+              <MenuItem value="hard">Hard</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ flex: '0 1 160px', minWidth: 160 }}>
+            <InputLabel>Max Time</InputLabel>
+            <Select
+              value={timeFilter}
+              onChange={(e) => handleFilterChange('time', e.target.value)}
+              label="Max Time"
+            >
+              <MenuItem value="">Any</MenuItem>
+              <MenuItem value="30">30 minutes</MenuItem>
+              <MenuItem value="60">1 hour</MenuItem>
+              <MenuItem value="120">2 hours</MenuItem>
+              <MenuItem value="300">5+ hours</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ flex: '0 1 200px', minWidth: 180 }}>
+            <InputLabel>Cuisine</InputLabel>
+            <Select
+              value={cuisineFilter}
+              onChange={(e) => handleFilterChange('cuisine', e.target.value)}
+              label="Cuisine"
+            >
+              <MenuItem value="">Any</MenuItem>
+              {['italian', 'mexican', 'chinese', 'indian', 'japanese', 'thai', 'french', 'mediterranean', 'american', 'other']
+                .map((c) => (
+                  <MenuItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={clearFilters}
+            startIcon={<FilterList />}
+            sx={{ textTransform: 'none', flex: '0 0 auto' }}
+          >
+            Clear
+          </Button>
+        </Box>
       </Paper>
 
       {/* Recipe Grid */}
@@ -373,21 +399,33 @@ const SavedRecipes = () => {
       ) : (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h5" gutterBottom color="text.secondary">
-            No saved recipes found
+            {searchTerm || authorFilter || difficultyFilter || timeFilter || cuisineFilter
+              ? 'No recipes match your filters'
+              : 'No saved recipes found'}
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {searchTerm || difficultyFilter || timeFilter 
-              ? 'Try adjusting your search criteria or clear the filters.'
-              : 'Start saving recipes you love to build your personal collection!'
-            }
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 540, mx: 'auto' }}>
+            {searchTerm || authorFilter || difficultyFilter || timeFilter || cuisineFilter 
+              ? 'Try tweaking your search, choosing a different cuisine, or clearing filters to discover more delicious ideas.'
+              : 'Start saving recipes you love to build your personal collection!'}
           </Typography>
-          <Button 
-            variant="contained" 
-            onClick={() => navigate('/')}
-            sx={{ textTransform: 'none' }}
-          >
-            Generate Your First Recipe
-          </Button>
+          {searchTerm || authorFilter || difficultyFilter || timeFilter || cuisineFilter ? (
+            <Button 
+              variant="outlined" 
+              onClick={clearFilters}
+              startIcon={<FilterList />}
+              sx={{ textTransform: 'none' }}
+            >
+              Clear all filters
+            </Button>
+          ) : (
+            <Button 
+              variant="contained" 
+              onClick={() => navigate('/')}
+              sx={{ textTransform: 'none' }}
+            >
+              Generate Your First Recipe
+            </Button>
+          )}
         </Box>
       )}
 

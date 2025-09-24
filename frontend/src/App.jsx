@@ -18,6 +18,8 @@ import Recent from './pages/Recent';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import Box from '@mui/material/Box';
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
 
 // Dynamic Material-UI theme (supports light/dark)
 const getTheme = (mode) => createTheme({
@@ -113,8 +115,10 @@ function AppShell({ mode, onToggleTheme }) {
               } 
             />
 
-            {/* Public recent page */}
+            {/* Public pages */}
             <Route path="/recent" element={<Recent />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
             
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />

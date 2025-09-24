@@ -5,44 +5,99 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get user's saved recipes
+// Get user's saved recipes (supports search and filters)
 router.get('/me/recipes', authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    
-    const user = await User.findById(req.user._id).populate({
-      path: 'savedRecipes',
-      options: {
-        limit: parseInt(limit),
-        skip: (parseInt(page) - 1) * parseInt(limit),
-        sort: { createdAt: -1 }
-      },
-      populate: {
-        path: 'authorId',
-        select: 'name avatar'
-      }
-    });
+    const { page = 1, limit = 20, search, difficulty, maxTime, author, cuisine, tags } = req.query;
 
-    const totalRecipes = await Recipe.countDocuments({
-      _id: { $in: user.savedRecipes }
-    });
+    // Fetch saved recipe IDs first (no populate)
+    const userDoc = await User.findById(req.user._id).select('savedRecipes').lean();
+    const savedIds = Array.isArray(userDoc?.savedRecipes) ? userDoc.savedRecipes : [];
+
+    if (savedIds.length === 0) {
+      return res.json({
+        success: true,
+        recipes: [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          pages: 1,
+        },
+      });
+    }
+
+    // Build match filter
+    const match = { _id: { $in: savedIds } };
+    if (difficulty) match.difficulty = difficulty;
+    if (cuisine) match.cuisine = cuisine;
+    if (tags) {
+      const tagList = String(tags)
+        .split(',')
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+      if (tagList.length) match.tags = { $in: tagList };
+    }
+    if (maxTime) match.totalTime = { $lte: parseInt(maxTime) };
+
+    // Optional author filter: find matching author IDs by name
+    let authorIds = null;
+    if (author && author.trim().length > 0) {
+      const authors = await User.find({ name: { $regex: author.trim(), $options: 'i' } }).select('_id').lean();
+      authorIds = authors.map(a => a._id);
+      if (authorIds.length === 0) {
+        // No matching authors -> no results
+        return res.json({
+          success: true,
+          recipes: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            pages: 1,
+          },
+        });
+      }
+      match.authorId = { $in: authorIds };
+    }
+
+    const useText = typeof search === 'string' && search.trim().length > 0;
+    if (useText) match.$text = { $search: search.trim() };
+
+    // Count total with filters
+    const total = await Recipe.countDocuments(match);
+
+    // Query recipes with filters and pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const cursor = Recipe.find(match)
+      .populate('authorId', 'name avatar')
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    if (useText) {
+      cursor.select({ score: { $meta: 'textScore' } });
+      cursor.sort({ score: { $meta: 'textScore' }, createdAt: -1 });
+    } else {
+      cursor.sort({ createdAt: -1 });
+    }
+
+    const recipes = await cursor.exec();
 
     res.json({
       success: true,
-      recipes: user.savedRecipes,
+      recipes,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: totalRecipes,
-        pages: Math.ceil(totalRecipes / parseInt(limit))
-      }
+        total,
+        pages: Math.max(1, Math.ceil(total / parseInt(limit))),
+      },
     });
-
   } catch (error) {
     console.error('Get user recipes error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch user recipes'
+      message: 'Failed to fetch user recipes',
     });
   }
 });

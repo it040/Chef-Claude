@@ -46,7 +46,7 @@ export const authAPI = {
   // Get current user profile
   getProfile: () => api.get('/auth/me'),
   
-  // Update user preferences
+  // Update user preferences and privacy settings
   updatePreferences: (preferences) => api.put('/auth/preferences', preferences),
   
   // Logout
@@ -54,6 +54,11 @@ export const authAPI = {
   
   // Delete account
   deleteAccount: () => api.delete('/auth/account'),
+};
+
+// Contact API
+export const contactAPI = {
+  send: (data) => api.post('/contact', data),
 };
 
 // Recipe API

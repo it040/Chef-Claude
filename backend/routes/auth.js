@@ -148,10 +148,10 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-// Update user preferences
+// Update user preferences and settings
 router.put('/preferences', authenticateToken, async (req, res) => {
   try {
-    const { dietary, allergies, cuisine, difficulty, maxPrepTime } = req.body;
+    const { dietary, allergies, cuisine, difficulty, maxPrepTime, emailOptIn, publicByDefault } = req.body;
     
     const user = await User.findById(req.user._id);
     
@@ -169,12 +169,17 @@ router.put('/preferences', authenticateToken, async (req, res) => {
     if (difficulty !== undefined) user.preferences.difficulty = difficulty;
     if (maxPrepTime !== undefined) user.preferences.maxPrepTime = maxPrepTime;
 
+    // Update settings
+    if (emailOptIn !== undefined) user.settings.emailOptIn = !!emailOptIn;
+    if (publicByDefault !== undefined) user.settings.publicByDefault = !!publicByDefault;
+
     await user.save();
 
     res.json({
       success: true,
       message: 'Preferences updated successfully',
-      preferences: user.preferences
+      preferences: user.preferences,
+      settings: user.settings,
     });
   } catch (error) {
     console.error('Update preferences error:', error);

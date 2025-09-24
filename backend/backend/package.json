@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "chef-claude-backend": "file:.."
+  }
+}

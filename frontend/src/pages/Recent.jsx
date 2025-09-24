@@ -135,87 +135,79 @@ const Recent = () => {
       </Box>
 
       {/* Search and Filters */}
-      <Paper elevation={1} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              placeholder="Search recipes..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
+      <Paper elevation={1} sx={{ p: 2.5, mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+          <TextField
+            size="small"
+            label="Search"
+            placeholder="Search recipes..."
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flex: '1 1 320px', minWidth: 240 }}
+          />
 
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Difficulty</InputLabel>
-              <Select
-                value={difficultyFilter}
-                onChange={(e) => { setDifficultyFilter(e.target.value); setPage(1); }}
-                label="Difficulty"
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="easy">Easy</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="hard">Hard</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Max Time</InputLabel>
-              <Select
-                value={timeFilter}
-                onChange={(e) => { setTimeFilter(e.target.value); setPage(1); }}
-                label="Max Time"
-              >
-                <MenuItem value="">Any</MenuItem>
-                <MenuItem value="30">30 minutes</MenuItem>
-                <MenuItem value="60">1 hour</MenuItem>
-                <MenuItem value="120">2 hours</MenuItem>
-                <MenuItem value="300">5+ hours</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Cuisine</InputLabel>
-              <Select
-                value={cuisineFilter}
-                onChange={(e) => { setCuisineFilter(e.target.value); setPage(1); }}
-                label="Cuisine"
-              >
-                <MenuItem value="">Any</MenuItem>
-                {['italian', 'mexican', 'chinese', 'indian', 'japanese', 'thai', 'french', 'mediterranean', 'american']
-                  .map((c) => (
-                    <MenuItem key={c} value={c}>
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={12}>
-            <Button
-              variant="outlined"
-              onClick={clearFilters}
-              startIcon={<FilterList />}
-              sx={{ textTransform: 'none' }}
+          <FormControl size="small" sx={{ flex: '0 1 180px', minWidth: 160 }}>
+            <InputLabel>Difficulty</InputLabel>
+            <Select
+              value={difficultyFilter}
+              onChange={(e) => { setDifficultyFilter(e.target.value); setPage(1); }}
+              label="Difficulty"
             >
-              Clear Filters
-            </Button>
-          </Grid>
-        </Grid>
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="easy">Easy</MenuItem>
+              <MenuItem value="medium">Medium</MenuItem>
+              <MenuItem value="hard">Hard</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ flex: '0 1 160px', minWidth: 160 }}>
+            <InputLabel>Max Time</InputLabel>
+            <Select
+              value={timeFilter}
+              onChange={(e) => { setTimeFilter(e.target.value); setPage(1); }}
+              label="Max Time"
+            >
+              <MenuItem value="">Any</MenuItem>
+              <MenuItem value="30">30 minutes</MenuItem>
+              <MenuItem value="60">1 hour</MenuItem>
+              <MenuItem value="120">2 hours</MenuItem>
+              <MenuItem value="300">5+ hours</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ flex: '0 1 200px', minWidth: 180 }}>
+            <InputLabel>Cuisine</InputLabel>
+            <Select
+              value={cuisineFilter}
+              onChange={(e) => { setCuisineFilter(e.target.value); setPage(1); }}
+              label="Cuisine"
+            >
+              <MenuItem value="">Any</MenuItem>
+              {['italian', 'mexican', 'chinese', 'indian', 'japanese', 'thai', 'french', 'mediterranean', 'american'].map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => { setSearchTerm(''); setDifficultyFilter(''); setTimeFilter(''); setCuisineFilter(''); setPage(1); }}
+            startIcon={<FilterList />}
+            sx={{ textTransform: 'none', flex: '0 0 auto' }}
+          >
+            Clear
+          </Button>
+        </Box>
       </Paper>
 
       {error && (

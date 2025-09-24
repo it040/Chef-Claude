@@ -16,14 +16,13 @@ import {
   AccountCircle,
   Favorite,
   ExitToApp,
-  Settings,
   DarkMode,
   LightMode,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const Navbar = ({ onOpenPrompts, onToggleTheme, mode }) => {
+const Navbar = ({ onToggleTheme, mode }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -110,11 +109,6 @@ const Navbar = ({ onOpenPrompts, onToggleTheme, mode }) => {
           <IconButton aria-label="toggle theme" onClick={onToggleTheme} sx={{ mr: 1 }}>
             {mode === 'dark' ? <LightMode /> : <DarkMode />}
           </IconButton>
-          {isAuthenticated && (
-            <IconButton aria-label="open prompts" onClick={onOpenPrompts} sx={{ mr: 1 }}>
-              <Settings />
-            </IconButton>
-          )}
           <Button
             color="inherit"
             onClick={() => navigate('/')}

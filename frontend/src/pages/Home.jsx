@@ -396,6 +396,32 @@ const Home = () => {
         </Grid>
       </Grid>
 
+      {/* Privacy & Contact */}
+      <Box sx={{ mt: 4 }}>
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+                <Shield color="primary" />
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Your privacy matters</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    We only use your inputs to generate recipes. No selling of data. You control your preferences and can delete your account anytime from Profile.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Stack direction="row" spacing={2} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+                <Chip icon={<Email />} label="deepvaishnav207@gmail.com" variant="outlined" clickable onClick={() => navigate('/contact')} />
+                <Chip icon={<Phone />} label="+91 7043041707" variant="outlined" />
+                <Chip icon={<Shield />} label="Privacy Policy" variant="outlined" clickable onClick={() => navigate('/privacy')} />
+              </Stack>
+            </Grid>
+          </Grid>
+        </Paper>
+      </Box>
+
       {/* Public-only Marketing Sections */}
       {!isAuthenticated && (
         <>
@@ -538,11 +564,11 @@ const Home = () => {
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Contact us</Typography>
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
                     <Email fontSize="small" />
-                    <Typography variant="body2">support@chefclaude.example</Typography>
+                    <Typography variant="body2">deepvaishnav207@gmail.com</Typography>
                   </Stack>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Phone fontSize="small" />
-                    <Typography variant="body2">+1 (555) 010‑1234</Typography>
+                    <Typography variant="body2">+91 7043041707</Typography>
                   </Stack>
                 </Grid>
                 <Grid item xs={12} md={6}>

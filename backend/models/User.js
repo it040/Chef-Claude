@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
       default: 60 // minutes
     }
   },
+  settings: {
+    emailOptIn: { type: Boolean, default: true },
+    publicByDefault: { type: Boolean, default: false }
+  },
   createdAt: {
     type: Date,
     default: Date.now

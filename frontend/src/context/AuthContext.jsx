@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.updatePreferences(preferences);
       if (response.success) {
-        updateUser({ preferences: response.preferences });
+        updateUser({ preferences: response.preferences, settings: response.settings });
         return { success: true, message: response.message };
       }
       throw new Error(response.message || 'Failed to update preferences');
