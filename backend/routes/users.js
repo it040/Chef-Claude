@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get user's saved recipes (supports search and filters)
+// Get user's saved recipes
 router.get('/me/recipes', authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, search, difficulty, maxTime, author, cuisine, tags } = req.query;
@@ -28,7 +28,7 @@ router.get('/me/recipes', authenticateToken, async (req, res) => {
     }
 
     // Build match filter
-    const match = { _id: { $in: savedIds } };
+    const match = { _id: { $in: savedIds }, $or: [ { isPublic: true }, { authorId: req.user._id } ] };
     if (difficulty) match.difficulty = difficulty;
     if (cuisine) match.cuisine = cuisine;
     if (tags) {
@@ -102,36 +102,39 @@ router.get('/me/recipes', authenticateToken, async (req, res) => {
   }
 });
 
-// Get user's favorite recipes
+// Get user's favorite recipes (exclude others' private)
 router.get('/me/favorites', authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    
-    const user = await User.findById(req.user._id).populate({
-      path: 'favorites',
-      options: {
-        limit: parseInt(limit),
-        skip: (parseInt(page) - 1) * parseInt(limit),
-        sort: { createdAt: -1 }
-      },
-      populate: {
-        path: 'authorId',
-        select: 'name avatar'
-      }
-    });
 
-    const totalFavorites = await Recipe.countDocuments({
-      _id: { $in: user.favorites }
-    });
+    // Fetch favorite recipe IDs
+    const userDoc = await User.findById(req.user._id).select('favorites').lean();
+    const favIds = Array.isArray(userDoc?.favorites) ? userDoc.favorites : [];
+
+    if (favIds.length === 0) {
+      return res.json({ success: true, recipes: [], pagination: { page: 1, limit: parseInt(limit), total: 0, pages: 1 } });
+    }
+
+    // Only include public recipes OR ones authored by the current user
+    const match = { _id: { $in: favIds }, $or: [ { isPublic: true }, { authorId: req.user._id } ] };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const recipes = await Recipe.find(match)
+      .populate('authorId', 'name avatar')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Recipe.countDocuments(match);
 
     res.json({
       success: true,
-      recipes: user.favorites,
+      recipes,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: totalFavorites,
-        pages: Math.ceil(totalFavorites / parseInt(limit))
+        total,
+        pages: Math.max(1, Math.ceil(total / parseInt(limit)))
       }
     });
 

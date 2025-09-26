@@ -185,10 +185,6 @@ const Navbar = ({ onToggleTheme, mode }) => {
                 <AccountCircle sx={{ mr: 2 }} />
                 Profile
               </MenuItem>
-              <MenuItem onClick={handleSavedClick}>
-                <Favorite sx={{ mr: 2 }} />
-                Saved Recipes
-              </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <ExitToApp sx={{ mr: 2 }} />
                 Logout

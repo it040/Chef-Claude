@@ -3,7 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
   Card,
   CardContent,
   Chip,
@@ -20,15 +19,16 @@ import {
   Skeleton,
   Snackbar,
 } from '@mui/material';
+import Grid from '../components/GridShim';
 import {
   ArrowBack,
   AccessTime,
   People,
   Favorite,
+  FavoriteBorder,
   Bookmark,
   BookmarkBorder,
   Share,
-  Comment,
   Restaurant,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -68,11 +68,23 @@ const RecipeDetail = () => {
     onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to save recipe', severity: 'error' }),
   });
 
+  const unsaveRecipeMutation = useMutation({
+    mutationFn: (id) => recipeAPI.unsaveRecipe(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipe', id] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
+      setSnackbar({ open: true, message: 'Removed from saved', severity: 'success' });
+    },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to remove', severity: 'error' }),
+  });
+
   // Like recipe mutation
   const likeRecipeMutation = useMutation({
     mutationFn: (id) => recipeAPI.toggleLike(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recipe', id] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'stats'] });
     },
     onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to update like', severity: 'error' }),
   });
@@ -82,7 +94,11 @@ const RecipeDetail = () => {
       navigate('/login');
       return;
     }
-    saveRecipeMutation.mutate(id);
+    if (isSaved) {
+      unsaveRecipeMutation.mutate(id);
+    } else {
+      saveRecipeMutation.mutate(id);
+    }
   };
 
   const handleLikeRecipe = () => {
@@ -126,6 +142,7 @@ const RecipeDetail = () => {
       default: return 'default';
     }
   };
+
 
   if (loadingRecipe) {
     return (
@@ -206,25 +223,8 @@ const RecipeDetail = () => {
       {/* Recipe Header */}
       <Paper elevation={2} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
         <Grid container spacing={4}>
-          {/* Recipe Image */}
-          {recipe.imageUrl && (
-            <Grid item xs={12} md={6}>
-              <Box
-                component="img"
-                src={recipe.imageUrl}
-                alt={recipe.title}
-                sx={{
-                  width: '100%',
-                  height: 400,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                }}
-              />
-            </Grid>
-          )}
-
           {/* Recipe Info */}
-          <Grid item xs={12} md={recipe.imageUrl ? 6 : 12}>
+          <Grid item xs={12}>
             <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
               {recipe.title}
             </Typography>
@@ -299,7 +299,7 @@ const RecipeDetail = () => {
                 disabled={likeRecipeMutation.isPending}
                 color={isLiked ? 'error' : 'default'}
               >
-                <Favorite />
+                {isLiked ? <Favorite /> : <FavoriteBorder />}
               </IconButton>
               
               <IconButton onClick={handleShare}>
@@ -311,9 +311,6 @@ const RecipeDetail = () => {
             <Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
               <Typography variant="body2" color="text.secondary">
                 {recipe.likeCount || 0} likes
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {recipe.commentCount || 0} comments
               </Typography>
             </Box>
           </Grid>

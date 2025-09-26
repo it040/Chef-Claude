@@ -89,6 +89,10 @@ export const recipeAPI = {
   
   // Delete recipe (author only)
   deleteRecipe: (id) => api.delete(`/recipes/${id}`),
+
+  // Archive toggle
+  archive: (id) => api.post(`/recipes/${id}/archive`),
+  unarchive: (id) => api.delete(`/recipes/${id}/archive`),
 };
 
 // User API

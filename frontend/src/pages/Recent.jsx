@@ -3,7 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -21,7 +20,8 @@ import {
   MenuItem,
   Paper,
 } from '@mui/material';
-import { AccessTime, People, Favorite, Bookmark, Search, FilterList } from '@mui/icons-material';
+import Grid from '../components/GridShim';
+import { AccessTime, People, Favorite, FavoriteBorder, Bookmark, BookmarkBorder, Archive, Unarchive, Search, FilterList } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -64,10 +64,35 @@ const Recent = () => {
     },
   });
 
+  const unsaveRecipeMutation = useMutation({
+    mutationFn: (id) => recipeAPI.unsaveRecipe(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipes', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
+      setSnackbar({ open: true, message: 'Removed from saved', severity: 'success' });
+    },
+    onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to remove', severity: 'error' }),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (id) => recipeAPI.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipes', 'recent'] });
+    }
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: (id) => recipeAPI.unarchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipes', 'recent'] });
+    }
+  });
   const likeRecipeMutation = useMutation({
     mutationFn: (id) => recipeAPI.toggleLike(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recipes', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'stats'] });
     },
     onError: (err) => {
       setSnackbar({ open: true, message: err?.message || 'Failed to update like', severity: 'error' });
@@ -79,7 +104,12 @@ const Recent = () => {
       navigate('/login');
       return;
     }
-    saveRecipeMutation.mutate(id);
+    const isSaved = Array.isArray(user?.savedRecipes) && user.savedRecipes.some(r => (r && (r._id || r)) === id);
+    if (isSaved) {
+      unsaveRecipeMutation.mutate(id);
+    } else {
+      saveRecipeMutation.mutate(id);
+    }
   };
 
   const handleLike = (id) => {
@@ -240,18 +270,6 @@ const Recent = () => {
             {recipes.map((recipe) => (
               <Grid item xs={12} sm={6} md={4} key={recipe._id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  {recipe.imageUrl ? (
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={recipe.imageUrl}
-                      alt={recipe.title}
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/recipe/${recipe._id}`)}
-                    />
-                  ) : (
-                    <Box sx={{ height: 200, bgcolor: 'action.hover', cursor: 'pointer' }} onClick={() => navigate(`/recipe/${recipe._id}`)} />
-                  )}
                   <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom noWrap sx={{ cursor: 'pointer' }} onClick={() => navigate(`/recipe/${recipe._id}`)}>
                       {recipe.title}
@@ -266,12 +284,26 @@ const Recent = () => {
                         by {recipe.authorId?.name || 'Chef Claude'}
                       </Typography>
                       <Box>
-                        <IconButton size="small" onClick={() => handleLike(recipe._id)} disabled={likeRecipeMutation.isPending}>
-                          <Favorite color={recipe.likes?.includes(user?._id) ? 'error' : 'inherit'} />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleSave(recipe._id)} disabled={saveRecipeMutation.isPending}>
-                          <Bookmark color="primary" />
-                        </IconButton>
+                        {(() => { const isLiked = Array.isArray(recipe.likes) && user?._id ? recipe.likes.includes(user._id) : false; return (
+                          <IconButton size="small" onClick={() => handleLike(recipe._id)} disabled={likeRecipeMutation.isPending}>
+                            {isLiked ? <Favorite color="error" /> : <FavoriteBorder />}
+                          </IconButton>
+                        ); })()}
+                        {(() => { const isSaved = Array.isArray(user?.savedRecipes) && user?.savedRecipes.some(r => (r && (r._id || r)) === recipe._id); return (
+                          <IconButton size="small" onClick={() => handleSave(recipe._id)} disabled={saveRecipeMutation.isPending || unsaveRecipeMutation.isPending}>
+                            {isSaved ? <Bookmark color="primary" /> : <BookmarkBorder />}
+                          </IconButton>
+                        ); })()}
+                        {(() => {
+                          const mine = recipe.authorId?._id && user?._id && (recipe.authorId._id === user._id);
+                          if (!mine) return null;
+                          const isPublic = recipe.isPublic !== false; // archived when false
+                          return (
+                            <IconButton size="small" onClick={() => (isPublic ? archiveMutation.mutate(recipe._id) : unarchiveMutation.mutate(recipe._id))} disabled={archiveMutation.isPending || unarchiveMutation.isPending}>
+                              <Archive color={isPublic ? 'inherit' : 'success'} />
+                            </IconButton>
+                          );
+                        })()}
                       </Box>
                     </Box>
                   </CardContent>

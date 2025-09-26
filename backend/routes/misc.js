@@ -1,13 +1,9 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
-const sgMail = require('@sendgrid/mail');
+const { sendMail } = require('../utils/mailer');
 
 const router = express.Router();
-
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
 
 // Simple rate limiter for contact form
 const contactLimiter = rateLimit({
@@ -36,25 +32,26 @@ router.post(
       const TO = process.env.CONTACT_TO || 'deepvaishnav207@gmail.com';
       const FROM = process.env.CONTACT_FROM || TO;
 
-      if (process.env.SENDGRID_API_KEY) {
-        const msg = {
+      let emailQueued = false;
+      let emailError = null;
+
+      try {
+        await sendMail({
           to: TO,
           from: FROM,
           subject: `Chef Claude Contact: ${name}`,
           text: `New message from ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\n\n${message}`,
           replyTo: email,
-        };
-        try {
-          await sgMail.send(msg);
-        } catch (e) {
-          console.error('SendGrid error:', e?.response?.body || e);
-          // Fall through to console log to ensure no user-facing failure
-        }
+        });
+        emailQueued = true;
+      } catch (e) {
+        emailError = String(e?.message || e);
+        console.error('Nodemailer error:', e);
       }
 
       console.log('📩 Contact request:', { name, email, phone, message: message.slice(0, 200) + (message.length > 200 ? '...' : '') });
 
-      return res.json({ success: true, message: 'Thanks! We received your message and will reply within 1-2 business days.' });
+      return res.json({ success: true, message: 'Thanks! We received your message and will reply within 1-2 business days.', emailQueued, emailError });
     } catch (err) {
       console.error('Contact error:', err);
       return res.status(500).json({ success: false, message: 'Failed to submit message' });

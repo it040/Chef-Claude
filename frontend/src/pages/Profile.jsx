@@ -6,7 +6,6 @@ import {
   Typography,
   Avatar,
   Button,
-  Grid,
   Card,
   CardContent,
   Chip,
@@ -26,6 +25,7 @@ import {
   FormControlLabel,
   Divider,
 } from '@mui/material';
+import Grid from '../components/GridShim';
 import {
   Edit,
   Save,
@@ -42,7 +42,7 @@ import { userAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
-  const { user, updatePreferences, deleteAccount } = useAuth();
+  const { user, updatePreferences } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [preferences, setPreferences] = useState(user?.preferences || {});
@@ -55,12 +55,6 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  // Fetch saved recipes
-  const { data: savedRecipes, isLoading: loadingSaved } = useQuery({
-    queryKey: ['user', 'saved'],
-    queryFn: () => userAPI.getSavedRecipes({ limit: 6 }),
-    enabled: !!user,
-  });
 
   const handleSavePreferences = async () => {
     const result = await updatePreferences(preferences);
@@ -329,72 +323,23 @@ const Profile = () => {
           </Paper>
         </Grid>
 
-        {/* Recent Saved Recipes */}
+        {/* Likes Entry Card */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 4, borderRadius: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-              Recent Saved Recipes
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
+              Your Liked Recipes
             </Typography>
-
-            {loadingSaved ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : savedRecipes?.recipes?.length > 0 ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {savedRecipes.recipes.slice(0, 3).map((recipe) => (
-                  <Card 
-                    key={recipe._id} 
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' }
-                    }}
-                    onClick={() => navigate(`/recipe/${recipe._id}`)}
-                  >
-                    <CardContent sx={{ py: 2 }}>
-                      <Typography variant="h6" noWrap gutterBottom>
-                        {recipe.title}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <Chip
-                          size="small"
-                          label={formatTime(recipe.totalTime)}
-                          icon={<AccessTime />}
-                          color="primary"
-                          variant="outlined"
-                        />
-                        <Chip
-                          size="small"
-                          label={recipe.difficulty}
-                          color="secondary"
-                          variant="outlined"
-                        />
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-                <Button 
-                  variant="outlined" 
-                  onClick={() => navigate('/saved')}
-                  sx={{ mt: 2, textTransform: 'none' }}
-                >
-                  View All Saved Recipes
-                </Button>
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body1" color="text.secondary" gutterBottom>
-                  No saved recipes yet
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  onClick={() => navigate('/')}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Generate Your First Recipe
-                </Button>
-              </Box>
-            )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              See everything you have liked in one place.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip icon={<Favorite />} label={`${userStats?.stats?.favoriteRecipes || 0} liked`} color="secondary" variant="outlined" />
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <Button variant="contained" onClick={() => navigate('/liked')} sx={{ textTransform: 'none' }}>
+                Open All Likes
+              </Button>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
@@ -406,28 +351,63 @@ const Profile = () => {
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
               Account & Privacy
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              We respect your privacy. Your data is used only to personalize your experience and generate better recipes. You can request deletion at any time.
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              We respect your privacy. Your data is used only to personalize your experience and generate better recipes.
             </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-              <FormControlLabel control={<Switch size="small" defaultChecked />} label="Email me occasional tips and updates" />
-              <FormControlLabel control={<Switch size="small" />} label="Make my generated recipes public by default" />
-            </Box>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              We never sell your data. Authentication is provided by Google, and your session is stored securely.
-            </Alert>
-            <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
-              <Button variant="outlined" color="error" onClick={async () => { const res = await deleteAccount(); if (res?.success) { window.location.href = '/'; } }} sx={{ textTransform: 'none' }}>
-                Delete My Account
-              </Button>
-              <Button variant="text" onClick={() => navigate('/contact')} sx={{ textTransform: 'none' }}>
-                Contact Support
-              </Button>
-            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Data Usage
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    • Recipe preferences stored locally
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    • Search history for better recommendations
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • Account activity for personalization
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Security Information
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    • Authentication via Google OAuth
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    • Session data encrypted and secure
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    • No data sharing with third parties
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  We never sell your data. Your recipes and preferences are private to you.
+                </Alert>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">Support Email: deepvaishnav207@gmail.com</Typography>
+                  <Typography variant="body2" color="text.secondary">Support Phone: +91 7043041707</Typography>
+                </Box>
+              </Grid>
+            </Grid>
           </Paper>
         </Grid>
       </Grid>
+
     </Container>
   );
 };

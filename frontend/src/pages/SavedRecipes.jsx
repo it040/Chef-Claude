@@ -3,7 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -22,6 +21,7 @@ import {
   Skeleton,
   Snackbar,
 } from '@mui/material';
+import Grid from '../components/GridShim';
 import {
   Search,
   AccessTime,
@@ -86,6 +86,8 @@ const SavedRecipes = () => {
     mutationFn: (id) => recipeAPI.toggleLike(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['user', 'stats'] });
     },
     onError: (err) => setSnackbar({ open: true, message: err?.message || 'Failed to update like', severity: 'error' }),
   });
@@ -278,16 +280,6 @@ const SavedRecipes = () => {
                     '&:hover': { transform: 'translateY(-4px)' }
                   }}
                 >
-                  {recipe.imageUrl && (
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={recipe.imageUrl}
-                      alt={recipe.title}
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/recipe/${recipe._id}`)}
-                    />
-                  )}
                   
                   <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <Typography 
@@ -359,7 +351,11 @@ const SavedRecipes = () => {
                           onClick={() => handleUnsaveRecipe(recipe._id)}
                           disabled={unsaveRecipeMutation.isPending}
                         >
-                          <Bookmark color="primary" />
+                          { (Array.isArray(user?.savedRecipes) && user?.savedRecipes.some(r => (r && (r._id || r)) === recipe._id)) ? (
+                            <Bookmark color="primary" />
+                          ) : (
+                            <BookmarkBorder />
+                          )}
                         </IconButton>
                       </Box>
                     </Box>

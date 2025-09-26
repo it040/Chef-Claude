@@ -6,7 +6,13 @@ const rateLimit = require('express-rate-limit');
 const passport = require('passport');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+//require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+//require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+//require('dotenv').config();
+
+console.log("DEBUG SENDGRID KEY:", process.env.SENDGRID_API_KEY?.slice(0, 4) + '...' || "missing");
 
 const app = express();
 const PORT = process.env.PORT || 5000;

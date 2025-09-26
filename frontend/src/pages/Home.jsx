@@ -6,7 +6,6 @@ import {
   Paper,
   TextField,
   Button,
-  Grid,
   CircularProgress,
   Alert,
   InputAdornment,
@@ -17,6 +16,7 @@ import {
   Stack,
   Chip,
 } from '@mui/material';
+import Grid from '../components/GridShim';
 import { useTheme, alpha } from '@mui/material/styles';
 import {
   Send,
@@ -369,7 +369,7 @@ const Home = () => {
               >
                 {generateRecipeMutation.isPending ? 'Cooking up ideas…' : 'Generate Recipe'}
               </Button>
-              {!isAuthenticated && (
+              {!isAuthenticated ? (
                 <Button
                   variant="outlined"
                   size="large"
@@ -383,6 +383,15 @@ const Home = () => {
                   }}
                 >
                   Sign In
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate('/liked')}
+                  sx={{ px: 5, py: 1.8, fontSize: '1.05rem', borderRadius: 999, textTransform: 'none' }}
+                >
+                  Show All Likes
                 </Button>
               )}
             </Box>
@@ -413,7 +422,7 @@ const Home = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <Stack direction="row" spacing={2} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                <Chip icon={<Email />} label="deepvaishnav207@gmail.com" variant="outlined" clickable onClick={() => navigate('/contact')} />
+                <Chip icon={<Email />} label="deepvaishnav207@gmail.com" variant="outlined" />
                 <Chip icon={<Phone />} label="+91 7043041707" variant="outlined" />
                 <Chip icon={<Shield />} label="Privacy Policy" variant="outlined" clickable onClick={() => navigate('/privacy')} />
               </Stack>

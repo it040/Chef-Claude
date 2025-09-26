@@ -120,7 +120,7 @@ router.post('/generate', authenticateToken, validateRecipeGeneration, async (req
   }
 });
 
-// Get all recipes with optional filters
+// Get all recipes with optional filters (respect visibility)
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const {
@@ -134,32 +134,40 @@ router.get('/', optionalAuth, async (req, res) => {
       authorId
     } = req.query;
 
-    const options = {
-      limit: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const lim = parseInt(limit);
 
-    const recipes = await Recipe.searchRecipes(search, {
-      difficulty,
-      cuisine,
-      maxTime: maxTime ? parseInt(maxTime) : undefined,
-      tags: tags ? tags.split(',') : undefined,
-      authorId,
-      ...options
-    });
+    // Base visibility: public for everyone; plus own drafts for logged-in author
+    const visibility = req.user ? { $or: [{ isPublic: true }, { authorId: req.user._id }] } : { isPublic: true };
 
-    const total = await Recipe.countDocuments(
-      search ? { $text: { $search: search } } : {}
-    );
+    // Build query
+    const q = { ...visibility };
+    if (search) q.$text = { $search: search };
+    if (difficulty) q.difficulty = difficulty;
+    if (cuisine) q.cuisine = cuisine;
+    if (maxTime) q.totalTime = { $lte: parseInt(maxTime) };
+    if (tags) q.tags = { $in: String(tags).split(',').map(t => t.trim().toLowerCase()).filter(Boolean) };
+    if (authorId) q.authorId = authorId;
+
+    // Sort: by relevance if text search, else newest first
+    const sort = search ? { score: { $meta: 'textScore' }, createdAt: -1 } : { createdAt: -1 };
+
+    const cursor = Recipe.find(q).populate('authorId', 'name avatar').sort(sort).skip(skip).limit(lim);
+    if (search) cursor.select({ score: { $meta: 'textScore' } });
+
+    const [recipes, total] = await Promise.all([
+      cursor.exec(),
+      Recipe.countDocuments(q),
+    ]);
 
     res.json({
       success: true,
       recipes,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: lim,
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: Math.max(1, Math.ceil(total / lim))
       }
     });
 
@@ -172,7 +180,7 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
-// Get single recipe by ID
+// Get single recipe by ID (respect visibility)
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id)
@@ -190,6 +198,15 @@ router.get('/:id', optionalAuth, async (req, res) => {
         success: false,
         message: 'Recipe not found'
       });
+    }
+
+    // Visibility: if private, only the author can access
+    if (recipe.isPublic === false) {
+      const user = req.user;
+      const isAuthor = user && recipe.authorId && recipe.authorId._id?.toString() === user._id?.toString();
+      if (!isAuthor) {
+        return res.status(403).json({ success: false, message: 'This recipe is private' });
+      }
     }
 
     res.json({
@@ -274,12 +291,27 @@ router.post('/:id/like', authenticateToken, async (req, res) => {
       });
     }
 
+    // Toggle like on the recipe
     await recipe.toggleLike(req.user._id);
+
+    // Reflect like state into the user's favorites list
+    const isNowLiked = recipe.likes.some((u) => u.toString() === req.user._id.toString());
+    try {
+      if (isNowLiked) {
+        await req.user.addToFavorites(recipe._id);
+      } else {
+        await req.user.removeFromFavorites(recipe._id);
+      }
+    } catch (e) {
+      // Non-fatal — log and continue
+      console.warn('Sync favorites error:', e?.message || e);
+    }
 
     res.json({
       success: true,
-      message: recipe.likes.includes(req.user._id) ? 'Recipe liked' : 'Recipe unliked',
-      likeCount: recipe.likes.length
+      message: isNowLiked ? 'Recipe liked' : 'Recipe unliked',
+      likeCount: recipe.likes.length,
+      liked: isNowLiked,
     });
 
   } catch (error) {
@@ -290,6 +322,41 @@ router.post('/:id/like', authenticateToken, async (req, res) => {
     });
   }
 });
+
+// Archive (make private) a recipe (author only)
+router.post('/:id/archive', authenticateToken, async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+    if (!recipe) return res.status(404).json({ success: false, message: 'Recipe not found' });
+    if (recipe.authorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Only the author can archive this recipe' });
+    }
+    recipe.isPublic = false;
+    await recipe.save();
+    return res.json({ success: true, message: 'Recipe archived', isPublic: recipe.isPublic });
+  } catch (e) {
+    console.error('Archive recipe error:', e);
+    return res.status(500).json({ success: false, message: 'Failed to archive recipe' });
+  }
+});
+
+// Unarchive (make public) a recipe (author only)
+router.delete('/:id/archive', authenticateToken, async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+    if (!recipe) return res.status(404).json({ success: false, message: 'Recipe not found' });
+    if (recipe.authorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Only the author can unarchive this recipe' });
+    }
+    recipe.isPublic = true;
+    await recipe.save();
+    return res.json({ success: true, message: 'Recipe made public', isPublic: recipe.isPublic });
+  } catch (e) {
+    console.error('Unarchive recipe error:', e);
+    return res.status(500).json({ success: false, message: 'Failed to unarchive recipe' });
+  }
+});
+
 
 // Add comment to recipe
 router.post('/:id/comments', authenticateToken, [

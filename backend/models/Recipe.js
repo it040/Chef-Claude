@@ -93,10 +93,6 @@ const recipeSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  imageUrl: {
-    type: String,
-    default: null
-  },
   nutrition: nutritionSchema,
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
